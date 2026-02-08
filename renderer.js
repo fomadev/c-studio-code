@@ -6,7 +6,7 @@ const { ipcRenderer } = require('electron');
 const amdLoader = require('./node_modules/monaco-editor/min/vs/loader.js');
 const amdRequire = amdLoader.require;
 
-// Importation de vos modules personnalisés
+// Importation des modules personnalisés
 const compiler = require('./src/compiler-handler');
 const ui = require('./src/ui-controller');
 const fileManager = require('./src/file-manager');
@@ -37,9 +37,12 @@ amdRequire(['vs/editor/editor.main'], function() {
         minimap: { enabled: true } 
     });
     
+    // Correction : Forcer le focus dès le chargement
+    editor.focus();
+
     terminalManager.write('Éditeur Monaco chargé avec succès.\n', 'success');
 
-    // Une fois Monaco chargé, on active la logique d'ouverture de fichiers
+    // Une fois Monaco prêt, on active les événements de fichiers
     setupFileEvents();
 });
 
@@ -56,11 +59,12 @@ function openFile(fileName) {
         monaco.editor.setModelLanguage(editor.getModel(), lang);
         
         terminalManager.write(`Fichier ouvert : ${fileName}\n`, 'info');
+        editor.focus();
     }
 }
 
 function setupFileEvents() {
-    // Intercepter les clics sur la sidebar
+    // Délégation d'événement pour la sidebar
     if (ui.fileList) {
         ui.fileList.addEventListener('click', (e) => {
             const item = e.target.closest('.file-item');
@@ -88,7 +92,7 @@ function setupFileEvents() {
                 if (result.success) {
                     terminalManager.write(`Fichier créé : ${fileName}\n`, 'success');
                     
-                    // Rafraîchir la liste et ouvrir
+                    // Rafraîchir la liste et ouvrir le fichier
                     const files = fileManager.getFilesInDirectory(fileManager.currentProjectDir);
                     ui.updateFileList(files);
                     openFile(fileName);
@@ -193,7 +197,7 @@ ipcRenderer.on('selected-directory', (event, pathDir) => {
     terminalManager.write(`Dossier chargé : ${pathDir}\n`, 'success');
 });
 
-// Initialisation par défaut (Optionnel : charge le dossier actuel au démarrage)
+// Initialisation par défaut du projet
 fileManager.currentProjectDir = __dirname; 
 const defaultFiles = fileManager.getFilesInDirectory(__dirname);
 ui.updateFileList(defaultFiles);

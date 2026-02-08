@@ -72,6 +72,32 @@ class FileManager {
         const content = this.readFile(filePath);
         return { path: filePath, content: content };
     }
+
+    /**
+     * Crée un nouveau fichier sur le disque
+     */
+    createNewFile(fileName) {
+        if (!this.currentProjectDir) return { success: false, message: "Aucun dossier ouvert" };
+        
+        const filePath = path.join(this.currentProjectDir, fileName);
+        
+        // Vérifier si le fichier existe déjà
+        if (fs.existsSync(filePath)) {
+            return { success: false, message: "Ce fichier existe déjà !" };
+        }
+
+        try {
+            // Créer un fichier vide avec un petit template de base si c'est un .c
+            const template = fileName.endsWith('.c') 
+                ? '#include <stdio.h>\n\nint main() {\n    printf("Nouveau fichier C\\n");\n    return 0;\n}' 
+                : '';
+                
+            fs.writeFileSync(filePath, template, 'utf8');
+            return { success: true, path: filePath };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    }
 }
 
 module.exports = new FileManager();

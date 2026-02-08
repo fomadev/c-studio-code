@@ -37,28 +37,28 @@ amdRequire(['vs/editor/editor.main'], function() {
     terminalManager.write('Éditeur Monaco chargé avec succès.\n', 'success');
 
     // Une fois Monaco chargé, on peut activer la logique d'ouverture de fichiers
-    setupFileOpening();
+    setupFileEvents();
 });
 
-// --- 2. LOGIQUE D'OUVERTURE DE FICHIERS ---
+// --- 2. LOGIQUE DES FICHIERS (OUVERTURE ET CRÉATION) ---
 
-function setupFileOpening() {
-    // Fonction pour ouvrir un fichier dans l'éditeur
-    function openFile(fileName) {
-        const fileData = fileManager.getFileFullData(fileName);
-        if (fileData) {
-            // Mettre à jour le contenu de Monaco
-            editor.setValue(fileData.content);
-            
-            // Changer le langage de l'éditeur selon l'extension
-            const extension = fileName.split('.').pop();
-            const lang = (extension === 'cpp' || extension === 'cc') ? 'cpp' : 'c';
-            monaco.editor.setModelLanguage(editor.getModel(), lang);
-            
-            terminalManager.write(`Fichier ouvert : ${fileName}\n`, 'info');
-        }
+// Fonction globale pour ouvrir un fichier dans l'éditeur
+function openFile(fileName) {
+    const fileData = fileManager.getFileFullData(fileName);
+    if (fileData) {
+        // Mettre à jour le contenu de Monaco
+        editor.setValue(fileData.content);
+        
+        // Changer le langage de l'éditeur selon l'extension
+        const extension = fileName.split('.').pop();
+        const lang = (extension === 'cpp' || extension === 'cc') ? 'cpp' : 'c';
+        monaco.editor.setModelLanguage(editor.getModel(), lang);
+        
+        terminalManager.write(`Fichier ouvert : ${fileName}\n`, 'info');
     }
+}
 
+function setupFileEvents() {
     // Intercepter les clics sur la sidebar (via délégation d'événements)
     if (ui.fileList) {
         ui.fileList.addEventListener('click', (e) => {
@@ -69,6 +69,37 @@ function setupFileOpening() {
             }
         });
     }
+
+    // Gestion du bouton "Nouveau Fichier"
+    const btnNewFile = document.getElementById('btn-new-file');
+    if (btnNewFile) {
+        btnNewFile.addEventListener('click', () => {
+            const fileName = prompt("Nom du nouveau fichier (ex: exercice1.c) :");
+            
+            if (fileName) {
+                // Validation simple de l'extension
+                if (!fileName.endsWith('.c') && !fileName.endsWith('.h') && !fileName.endsWith('.cpp')) {
+                    alert("Veuillez ajouter une extension valide (.c, .h, .cpp)");
+                    return;
+                }
+
+                const result = fileManager.createNewFile(fileName);
+                
+                if (result.success) {
+                    terminalManager.write(`Fichier créé : ${fileName}\n`, 'success');
+                    
+                    // Rafraîchir la liste
+                    const files = fileManager.getFilesInDirectory(fileManager.currentProjectDir);
+                    ui.updateFileList(files);
+                    
+                    // Ouvrir le fichier fraîchement créé
+                    openFile(fileName);
+                } else {
+                    alert(result.message);
+                }
+            }
+        });
+    }
 }
 
 // --- 3. INITIALISATION DU TERMINAL ---
@@ -76,7 +107,6 @@ function setupFileOpening() {
 const terminalContainer = document.getElementById('terminal-container');
 terminalManager.init(terminalContainer);
 
-// Message d'accueil
 terminalManager.write('Bienvenue dans C Studio Code (UNIKIN v1.0.0)\n', 'success');
 terminalManager.write('Prêt pour la compilation C/C++.\n\n', 'info');
 
@@ -148,3 +178,9 @@ window.addEventListener('keydown', (e) => {
         ui.btnRun.click();
     }
 });
+
+// --- 6. INITIALISATION DU PROJET (TEST TEMPORAIRE) ---
+
+fileManager.currentProjectDir = __dirname; 
+const files = fileManager.getFilesInDirectory(__dirname);
+ui.updateFileList(files);

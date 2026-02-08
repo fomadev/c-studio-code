@@ -4,13 +4,14 @@ const path = require('path');
 let mainWindow;
 
 function createWindow() {
+    // Configuration de la fenêtre principale
     mainWindow = new BrowserWindow({
         width: 1200,
         height: 800,
         title: "C Studio Code - Université de Kinshasa",
         icon: path.join(__dirname, 'assets/icons/logo.png'),
         webPreferences: {
-            nodeIntegration: true,
+            nodeIntegration: true, // Autorise l'utilisation de 'require' dans le renderer
             contextIsolation: false,
             enableRemoteModule: true
         }
@@ -18,7 +19,7 @@ function createWindow() {
 
     mainWindow.loadFile('index.html');
 
-    // Menu personnalisé en Français
+    // --- CONFIGURATION DU MENU ---
     const template = [
         {
             label: 'Fichier',
@@ -27,7 +28,7 @@ function createWindow() {
                     label: 'Nouveau Fichier', 
                     accelerator: 'CmdOrCtrl+N',
                     click: () => {
-                        // On simule un clic sur le bouton "+" du renderer
+                        // Envoie un signal au renderer pour déclencher la création
                         mainWindow.webContents.send('trigger-new-file');
                     }
                 },
@@ -42,7 +43,7 @@ function createWindow() {
                         });
                         
                         if (!result.canceled && result.filePaths.length > 0) {
-                            // Envoi du chemin sélectionné vers renderer.js
+                            // Envoie le chemin sélectionné vers renderer.js
                             mainWindow.webContents.send('selected-directory', result.filePaths[0]);
                         }
                     }
@@ -51,6 +52,7 @@ function createWindow() {
                     label: 'Enregistrer', 
                     accelerator: 'CmdOrCtrl+S',
                     click: () => {
+                        // Envoie un signal pour sauvegarder le fichier en cours
                         mainWindow.webContents.send('save-current-file');
                     }
                 },
@@ -102,11 +104,12 @@ function createWindow() {
     });
 }
 
-// --- GESTION DES ÉVÉNEMENTS DE L'APPLICATION ---
+// --- GESTION DU CYCLE DE VIE DE L'APPLICATION ---
 
 app.on('ready', createWindow);
 
 app.on('window-all-closed', function () {
+    // Sur macOS, les applications restent actives jusqu'à la fermeture explicite
     if (process.platform !== 'darwin') app.quit();
 });
 

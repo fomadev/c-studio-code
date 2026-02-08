@@ -1,6 +1,5 @@
 const fs = require('fs');
 const path = require('path');
-const { dialog } = require('electron').remote; // Nécessite 'remote' ou IPC, nous utiliserons une approche simple ici
 
 class FileManager {
     constructor() {
@@ -9,31 +8,43 @@ class FileManager {
 
     /**
      * Ouvre une boîte de dialogue pour sélectionner un dossier de projet
+     * Note: Dans les versions récentes d'Electron, cette logique est gérée via IPC 
+     * dans le processus main.js
      */
     async selectProjectDirectory() {
-        // Note: Dans Electron moderne, on utilise souvent IPC, 
-        // mais pour la v1, nous allons simuler ou utiliser le module 'fs'
-        // pour scanner un chemin spécifique.
         return new Promise((resolve, reject) => {
-            // Logique de sélection (pour la v1.0.0, on peut fixer un dossier par défaut)
-            // ou utiliser l'API Electron via le processus principal
+            // Renvoie le dossier actuel ou null si non défini
             resolve(this.currentProjectDir);
         });
     }
 
     /**
      * Lit le contenu du dossier actuel pour l'afficher dans la sidebar
+     * Version robuste avec vérification du type d'objet (fichier vs dossier)
      */
     getFilesInDirectory(dirPath) {
         if (!dirPath) return [];
+        
+        this.currentProjectDir = dirPath; // Mémorisation du dossier actuel
+
         try {
-            const files = fs.readdirSync(dirPath);
-            // On ne garde que les fichiers C, C++ et Headers
-            return files.filter(file => 
-                file.endsWith('.c') || 
-                file.endsWith('.cpp') || 
-                file.endsWith('.h')
-            );
+            const items = fs.readdirSync(dirPath);
+            
+            // On ne garde que les fichiers (pas les dossiers) C, C++ et Headers
+            return items.filter(file => {
+                try {
+                    const fullPath = path.join(dirPath, file);
+                    const stat = fs.statSync(fullPath);
+                    
+                    return stat.isFile() && (
+                        file.endsWith('.c') || 
+                        file.endsWith('.cpp') || 
+                        file.endsWith('.h')
+                    );
+                } catch (e) {
+                    return false; // Ignorer les fichiers inaccessibles
+                }
+            });
         } catch (err) {
             console.error("Erreur de lecture dossier:", err);
             return [];
@@ -59,6 +70,7 @@ class FileManager {
         try {
             return fs.readFileSync(filePath, 'utf8');
         } catch (err) {
+            console.error("Erreur de lecture fichier:", err);
             return "";
         }
     }
@@ -74,10 +86,12 @@ class FileManager {
     }
 
     /**
-     * Crée un nouveau fichier sur le disque
+     * Crée un nouveau fichier sur le disque avec un template de base
      */
     createNewFile(fileName) {
-        if (!this.currentProjectDir) return { success: false, message: "Aucun dossier ouvert" };
+        if (!this.currentProjectDir) {
+            return { success: false, message: "Aucun dossier projet ouvert" };
+        }
         
         const filePath = path.join(this.currentProjectDir, fileName);
         
@@ -87,7 +101,7 @@ class FileManager {
         }
 
         try {
-            // Créer un fichier vide avec un petit template de base si c'est un .c
+            // Template de base pour les nouveaux fichiers C
             const template = fileName.endsWith('.c') 
                 ? '#include <stdio.h>\n\nint main() {\n    printf("Nouveau fichier C\\n");\n    return 0;\n}' 
                 : '';
@@ -100,4 +114,5 @@ class FileManager {
     }
 }
 
+// Export d'une instance unique (Singleton)
 module.exports = new FileManager();

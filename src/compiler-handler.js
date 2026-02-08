@@ -1,15 +1,16 @@
 const { exec } = require('child_process');
 const path = require('path');
-const os = require('os');
+const fs = require('fs');
 
 class CompilerHandler {
     constructor() {
-        this.platform = process.platform; // win32, linux, or darwin
+        this.platform = process.platform;
+        // Chemin vers les compilateurs embarqués
         this.basePath = path.join(__dirname, '..', 'resources', 'compilers');
     }
 
     /**
-     * Détermine le chemin du compilateur selon l'OS
+     * Détermine le chemin du compilateur
      */
     getCompilerPath(isCpp = false) {
         let binPath = '';
@@ -26,33 +27,40 @@ class CompilerHandler {
             executable = isCpp ? 'clang++' : 'clang';
         }
 
-        return path.join(binPath, executable);
+        const fullPath = path.join(binPath, executable);
+
+        // --- AMÉLIORATION : Fallback ---
+        // Si le compilateur n'est pas trouvé dans 'resources', on utilise celui du système (PATH)
+        if (!fs.existsSync(fullPath)) {
+            return isCpp ? (this.platform === 'darwin' ? 'clang++' : 'g++') : (this.platform === 'darwin' ? 'clang' : 'gcc');
+        }
+
+        return fullPath;
     }
 
-    /**
-     * Prépare les arguments de compilation (Inclusion des headers communs)
-     */
     getIncludeArgs() {
         const commonInclude = path.join(this.basePath, 'common', 'include');
-        return `-I "${commonInclude}"`;
+        // On ne rajoute l'argument que si le dossier existe
+        if (fs.existsSync(commonInclude)) {
+            return `-I "${commonInclude}"`;
+        }
+        return '';
     }
 
     /**
-     * Exécute la compilation
-     * @param {string} sourceFile - Chemin du fichier .c ou .cpp
-     * @param {string} outputFile - Chemin de l'exécutable à générer
-     * @param {function} callback - Pour renvoyer le résultat (succès ou erreur)
+     * Compilation
      */
     compile(sourceFile, outputFile, callback) {
-        const isCpp = sourceFile.endsWith('.cpp');
+        const isCpp = sourceFile.endsWith('.cpp') || sourceFile.endsWith('.cc');
         const compiler = this.getCompilerPath(isCpp);
         const includes = this.getIncludeArgs();
 
-        // Commande : gcc "source.c" -I "headers" -o "destination.exe"
+        // Utilisation de guillemets pour gérer les espaces dans les chemins
         const command = `"${compiler}" "${sourceFile}" ${includes} -o "${outputFile}"`;
 
         exec(command, (error, stdout, stderr) => {
             if (error) {
+                // On renvoie stderr car c'est là que GCC écrit les erreurs de syntaxe
                 callback({ success: false, message: stderr || error.message });
             } else {
                 callback({ success: true, message: "Compilation réussie !" });
@@ -61,11 +69,16 @@ class CompilerHandler {
     }
 
     /**
-     * Lance l'exécutable généré
+     * Exécution
      */
     run(exePath, callback) {
-        // Sur Windows, on lance directement. Sur Unix, on ajoute "./"
-        const command = this.platform === 'win32' ? `"${exePath}"` : `./"${exePath}"`;
+        // Validation : Vérifier si l'exécutable existe vraiment
+        if (!fs.existsSync(exePath)) {
+            return callback({ success: false, message: "Erreur : L'exécutable est introuvable." });
+        }
+
+        // Sur Unix, il faut parfois rendre le fichier exécutable
+        const command = this.platform === 'win32' ? `"${exePath}"` : `chmod +x "${exePath}" && "${exePath}"`;
         
         exec(command, (error, stdout, stderr) => {
             if (error) {

@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>C Studio Code - UNIKIN v1.0.0</title>
+    <title>C Studio Code</title>
     <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="app-container">
         <header class="top-bar">
-            <div class="logo">
-                <img src="assets/icons/logo.png" style="height:25px; vertical-align:middle; margin-right:10px;">
+            <div class="logo-section">
+                <img src="assets/icons/logo.png" alt="Logo">
                 <span>C Studio Code</span>
             </div>
             <div class="actions">
-                <button id="btn-run" title="Compiler et Exécuter (F5)">▶ Exécuter</button>
+                <button id="btn-run" title="Compiler et Exécuter (F5)">
+                    <span class="icon">▶</span> Exécuter
+                </button>
             </div>
         </header>
 
@@ -23,21 +25,19 @@
             <aside class="sidebar">
                 <div class="sidebar-header">
                     <span>EXPLORATEUR</span>
-                    <button id="btn-new-file" title="Nouveau Fichier" style="background:transparent; border:none; color:white; cursor:pointer; font-weight:bold; font-size: 1.2em;">+</button>
+                    <button id="btn-new-file" title="Nouveau Fichier">+</button>
                 </div>
                 <div id="file-list" class="file-tree">
                     </div>
             </aside>
 
             <section class="editor-section">
-                <div class="editor-container">
-                    <div id="editor-container" style="width: 100%; height: 100%;"></div>
-                </div>
+                <div id="editor-container"></div>
                 
                 <div class="terminal-wrapper">
                     <div class="terminal-header">
                         <span>TERMINAL</span>
-                        <button onclick="document.getElementById('terminal-container').innerHTML=''">Effacer</button>
+                        <button class="btn-clear-terminal" id="clear-terminal-btn">Effacer</button>
                     </div>
                     <div id="terminal-container"></div>
                 </div>

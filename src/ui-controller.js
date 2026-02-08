@@ -5,41 +5,13 @@ class UIController {
     constructor() {
         // Sélection des éléments clés
         this.btnRun = document.getElementById('btn-run');
-        this.editor = document.getElementById('code-editor');
-        this.outputArea = document.getElementById('output');
+        // Note: l'éditeur est désormais géré par Monaco dans renderer.js, 
+        // nous gardons la référence au conteneur si besoin.
+        this.editorContainer = document.getElementById('editor-container');
         this.fileList = document.getElementById('file-list');
         
         // Initialisation des tooltips (bulles d'aide)
         this.setupTooltips();
-    }
-
-    /**
-     * Affiche un message dans le terminal de l'IDE
-     * @param {string} text - Le texte à afficher
-     * @param {string} type - 'info', 'success', ou 'error'
-     */
-    logToTerminal(text, type = 'info') {
-        const colors = {
-            info: '#d4d4d4',    // Gris clair
-            success: '#4ec9b0', // Vert émeraude
-            error: '#f44747'    // Rouge vif
-        };
-
-        const timestamp = new Date().toLocaleTimeString('fr-FR');
-        const formattedText = `[${timestamp}] ${text}\n`;
-        
-        this.outputArea.innerText += formattedText;
-        this.outputArea.style.color = colors[type];
-        
-        // Auto-scroll vers le bas
-        this.outputArea.scrollTop = this.outputArea.scrollHeight;
-    }
-
-    /**
-     * Efface le contenu du terminal
-     */
-    clearTerminal() {
-        this.outputArea.innerText = '';
     }
 
     /**
@@ -48,11 +20,24 @@ class UIController {
      */
     updateFileList(files) {
         this.fileList.innerHTML = '';
+        
+        if (!files || files.length === 0) {
+            this.fileList.innerHTML = '<div class="file-item-empty">Aucun fichier</div>';
+            return;
+        }
+
         files.forEach(file => {
             const div = document.createElement('div');
             div.className = 'file-item';
-            // Icône simple selon l'extension
-            const icon = file.endsWith('.c') ? '📄' : '⚙️';
+            
+            // ÉTAPE CRUCIALE : Stocke le nom du fichier pour renderer.js
+            div.setAttribute('data-filename', file); 
+            
+            // Icônes personnalisées selon l'extension
+            let icon = '📄'; // Par défaut .c
+            if (file.endsWith('.h')) icon = '📑';
+            if (file.endsWith('.cpp') || file.endsWith('.cc')) icon = '🔷';
+            
             div.innerHTML = `<span>${icon} ${file}</span>`;
             this.fileList.appendChild(div);
         });
@@ -62,8 +47,9 @@ class UIController {
      * Configuration des raccourcis et bulles d'aide
      */
     setupTooltips() {
-        // Exemple : quand on survole le bouton Run
-        this.btnRun.title = "Compiler et Exécuter (F5)";
+        if (this.btnRun) {
+            this.btnRun.title = "Compiler et Exécuter (F5)";
+        }
     }
 
     /**
@@ -71,11 +57,13 @@ class UIController {
      */
     setLoading(isLoading) {
         if (isLoading) {
-            this.btnRun.innerText = "⌛ Compilation...";
+            this.btnRun.innerHTML = "<span>⌛ Compilation...</span>";
             this.btnRun.disabled = true;
+            this.btnRun.classList.add('loading');
         } else {
-            this.btnRun.innerText = "▶ Compiler & Exécuter";
+            this.btnRun.innerHTML = "<span>▶ Exécuter</span>";
             this.btnRun.disabled = false;
+            this.btnRun.classList.remove('loading');
         }
     }
 }

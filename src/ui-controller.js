@@ -5,12 +5,10 @@ class UIController {
     constructor() {
         // Sélection des éléments clés
         this.btnRun = document.getElementById('btn-run');
-        // Note: l'éditeur est désormais géré par Monaco dans renderer.js, 
-        // nous gardons la référence au conteneur si besoin.
         this.editorContainer = document.getElementById('editor-container');
         this.fileList = document.getElementById('file-list');
         
-        // Initialisation des tooltips (bulles d'aide)
+        // Initialisation des tooltips
         this.setupTooltips();
     }
 
@@ -19,10 +17,18 @@ class UIController {
      * @param {Array} files - Liste des noms de fichiers
      */
     updateFileList(files) {
+        if (!this.fileList) return;
+        
         this.fileList.innerHTML = '';
         
         if (!files || files.length === 0) {
-            this.fileList.innerHTML = '<div class="file-item-empty">Aucun fichier</div>';
+            const emptyDiv = document.createElement('div');
+            emptyDiv.className = 'file-item-empty';
+            emptyDiv.style.padding = '10px';
+            emptyDiv.style.fontSize = '12px';
+            emptyDiv.style.color = '#858585';
+            emptyDiv.innerText = 'Aucun fichier';
+            this.fileList.appendChild(emptyDiv);
             return;
         }
 
@@ -30,21 +36,26 @@ class UIController {
             const div = document.createElement('div');
             div.className = 'file-item';
             
-            // ÉTAPE CRUCIALE : Stocke le nom du fichier pour renderer.js
+            // Stocke le nom du fichier pour renderer.js
             div.setAttribute('data-filename', file); 
             
-            // Icônes personnalisées selon l'extension
-            let icon = '📄'; // Par défaut .c
+            // Détermination de l'icône
+            let icon = '📄'; 
             if (file.endsWith('.h')) icon = '📑';
             if (file.endsWith('.cpp') || file.endsWith('.cc')) icon = '🔷';
             
-            div.innerHTML = `<span>${icon} ${file}</span>`;
+            // STRUCTURE AMÉLIORÉE : On sépare l'icône du texte pour un alignement parfait
+            div.innerHTML = `
+                <span class="file-icon" style="margin-right: 8px; opacity: 0.8;">${icon}</span>
+                <span class="file-name">${file}</span>
+            `;
+
             this.fileList.appendChild(div);
         });
     }
 
     /**
-     * Configuration des raccourcis et bulles d'aide
+     * Configuration des bulles d'aide
      */
     setupTooltips() {
         if (this.btnRun) {
@@ -53,17 +64,22 @@ class UIController {
     }
 
     /**
-     * Affiche une barre de progression ou un indicateur de chargement
+     * Affiche un indicateur de chargement sur le bouton
      */
     setLoading(isLoading) {
+        if (!this.btnRun) return;
+
         if (isLoading) {
             this.btnRun.innerHTML = "<span>⌛ Compilation...</span>";
             this.btnRun.disabled = true;
-            this.btnRun.classList.add('loading');
+            this.btnRun.style.opacity = "0.7";
+            this.btnRun.style.cursor = "not-allowed";
         } else {
-            this.btnRun.innerHTML = "<span>▶ Exécuter</span>";
+            // On remet l'icône et le texte original
+            this.btnRun.innerHTML = "▶ Exécuter";
             this.btnRun.disabled = false;
-            this.btnRun.classList.remove('loading');
+            this.btnRun.style.opacity = "1";
+            this.btnRun.style.cursor = "pointer";
         }
     }
 }

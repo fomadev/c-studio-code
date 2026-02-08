@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C Studio Code - UNIKIN v1.0.0</title>
+    <link rel="stylesheet" href="node_modules/xterm/css/xterm.css" />
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-container">
+        <header class="top-bar">
+            <div class="logo">C Studio Code</div>
+            <div class="actions">
+                <button id="btn-run" title="Compiler et Exécuter (F5)">▶ Exécuter</button>
+            </div>
+        </header>
+
+        <div class="main-content">
+            <aside class="sidebar">
+                <div class="sidebar-header">EXPLORATEUR</div>
+                <div id="file-list" class="file-tree">
+                    </div>
+            </aside>
+
+            <section class="editor-section">
+                <div class="editor-container">
+                    <textarea id="code-editor" spellcheck="false" placeholder="// Écrivez votre code C ici..."></textarea>
+                </div>
+                
+                <div class="terminal-wrapper">
+                    <div class="terminal-header">
+                        <span>TERMINAL</span>
+                        <button onclick="document.getElementById('terminal-container').innerHTML=''">Effacer</button>
+                    </div>
+                    <div id="terminal-container"></div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="renderer.js"></script>
+</body>
+</html>

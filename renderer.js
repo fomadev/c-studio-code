@@ -35,21 +35,54 @@ amdRequire(['vs/editor/editor.main'], function() {
     });
     
     terminalManager.write('Éditeur Monaco chargé avec succès.\n', 'success');
+
+    // Une fois Monaco chargé, on peut activer la logique d'ouverture de fichiers
+    setupFileOpening();
 });
 
-// --- 2. INITIALISATION DU TERMINAL ---
+// --- 2. LOGIQUE D'OUVERTURE DE FICHIERS ---
+
+function setupFileOpening() {
+    // Fonction pour ouvrir un fichier dans l'éditeur
+    function openFile(fileName) {
+        const fileData = fileManager.getFileFullData(fileName);
+        if (fileData) {
+            // Mettre à jour le contenu de Monaco
+            editor.setValue(fileData.content);
+            
+            // Changer le langage de l'éditeur selon l'extension
+            const extension = fileName.split('.').pop();
+            const lang = (extension === 'cpp' || extension === 'cc') ? 'cpp' : 'c';
+            monaco.editor.setModelLanguage(editor.getModel(), lang);
+            
+            terminalManager.write(`Fichier ouvert : ${fileName}\n`, 'info');
+        }
+    }
+
+    // Intercepter les clics sur la sidebar (via délégation d'événements)
+    if (ui.fileList) {
+        ui.fileList.addEventListener('click', (e) => {
+            const item = e.target.closest('.file-item');
+            if (item) {
+                const fileName = item.getAttribute('data-filename');
+                openFile(fileName);
+            }
+        });
+    }
+}
+
+// --- 3. INITIALISATION DU TERMINAL ---
 
 const terminalContainer = document.getElementById('terminal-container');
 terminalManager.init(terminalContainer);
 
-// Message d'accueil pour les étudiants
+// Message d'accueil
 terminalManager.write('Bienvenue dans C Studio Code (UNIKIN v1.0.0)\n', 'success');
 terminalManager.write('Prêt pour la compilation C/C++.\n\n', 'info');
 
-// --- 3. GESTION DU BOUTON "EXÉCUTER" ---
+// --- 4. GESTION DU BOUTON "EXÉCUTER" ---
 
 ui.btnRun.addEventListener('click', async () => {
-    // MODIFICATION ICI : On récupère le code via l'API de Monaco
     if (!editor) {
         terminalManager.write('Erreur : L\'éditeur n\'est pas encore chargé.\n', 'error');
         return;
@@ -57,13 +90,11 @@ ui.btnRun.addEventListener('click', async () => {
     
     const code = editor.getValue(); 
     
-    // Vérifier si l'éditeur est vide
     if (!code.trim()) {
         terminalManager.write('Erreur : Aucun code à compiler !\n', 'error');
         return;
     }
 
-    // Définir les chemins temporaires
     const tempDir = path.join(__dirname, 'temp');
     if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir);
@@ -72,7 +103,6 @@ ui.btnRun.addEventListener('click', async () => {
     const sourcePath = path.join(tempDir, 'main.c');
     const exePath = path.join(tempDir, 'main.exe');
 
-    // Étape A : Sauvegarder le code actuel
     ui.setLoading(true);
     terminalManager.clear();
     terminalManager.write('--- Nouvelle session de compilation ---\n', 'info');
@@ -85,7 +115,6 @@ ui.btnRun.addEventListener('click', async () => {
         return;
     }
 
-    // Étape B : Compiler via le CompilerHandler
     terminalManager.write('Compilation en cours...\n', 'info');
     
     compiler.compile(sourcePath, exePath, (res) => {
@@ -94,7 +123,6 @@ ui.btnRun.addEventListener('click', async () => {
             terminalManager.write(res.message + '\n', 'error');
             ui.setLoading(false);
         } else {
-            // Étape C : Succès ! Lancer l'exécutable
             terminalManager.write('Compilation réussie !\n', 'success');
             terminalManager.write('---------------------------\n', 'info');
             
@@ -113,7 +141,7 @@ ui.btnRun.addEventListener('click', async () => {
     });
 });
 
-// --- 4. RACCOURCIS CLAVIER ---
+// --- 5. RACCOURCIS CLAVIER ---
 
 window.addEventListener('keydown', (e) => {
     if (e.key === 'F5') {

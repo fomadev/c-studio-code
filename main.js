@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog } = require('electron');
 const path = require('path');
 
 let mainWindow;
@@ -23,9 +23,37 @@ function createWindow() {
         {
             label: 'Fichier',
             submenu: [
-                { label: 'Nouveau Fichier', accelerator: 'CmdOrCtrl+N' },
-                { label: 'Ouvrir Dossier', accelerator: 'CmdOrCtrl+O' },
-                { label: 'Enregistrer', accelerator: 'CmdOrCtrl+S' },
+                { 
+                    label: 'Nouveau Fichier', 
+                    accelerator: 'CmdOrCtrl+N',
+                    click: () => {
+                        // On simule un clic sur le bouton "+" du renderer
+                        mainWindow.webContents.send('trigger-new-file');
+                    }
+                },
+                { 
+                    label: 'Ouvrir Dossier', 
+                    accelerator: 'CmdOrCtrl+O',
+                    click: async () => {
+                        const result = await dialog.showOpenDialog(mainWindow, {
+                            properties: ['openDirectory'],
+                            title: 'Sélectionner votre dossier de projet C',
+                            buttonLabel: 'Choisir ce dossier'
+                        });
+                        
+                        if (!result.canceled && result.filePaths.length > 0) {
+                            // Envoi du chemin sélectionné vers renderer.js
+                            mainWindow.webContents.send('selected-directory', result.filePaths[0]);
+                        }
+                    }
+                },
+                { 
+                    label: 'Enregistrer', 
+                    accelerator: 'CmdOrCtrl+S',
+                    click: () => {
+                        mainWindow.webContents.send('save-current-file');
+                    }
+                },
                 { type: 'separator' },
                 { label: 'Quitter', role: 'quit' }
             ]
@@ -44,8 +72,24 @@ function createWindow() {
         {
             label: 'Aide',
             submenu: [
-                { label: 'Documentation UNIKIN' },
-                { label: 'À propos', click: () => { console.log("C Studio Code v1.0.0"); } }
+                { 
+                    label: 'Documentation UNIKIN',
+                    click: async () => {
+                        const { shell } = require('electron');
+                        await shell.openExternal('https://www.unikin.ac.cd');
+                    }
+                },
+                { 
+                    label: 'À propos', 
+                    click: () => { 
+                        dialog.showMessageBox(mainWindow, {
+                            type: 'info',
+                            title: 'À propos',
+                            message: 'C Studio Code v1.0.0',
+                            detail: 'Un IDE léger conçu pour les étudiants de l\'Université de Kinshasa.\nBasé sur Monaco Editor et GCC.'
+                        });
+                    } 
+                }
             ]
         }
     ];
@@ -57,6 +101,8 @@ function createWindow() {
         mainWindow = null;
     });
 }
+
+// --- GESTION DES ÉVÉNEMENTS DE L'APPLICATION ---
 
 app.on('ready', createWindow);
 

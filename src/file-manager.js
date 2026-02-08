@@ -62,6 +62,16 @@ class FileManager {
             return "";
         }
     }
+
+    /**
+     * Récupère le chemin complet et le contenu d'un fichier sélectionné
+     */
+    getFileFullData(fileName) {
+        if (!this.currentProjectDir) return null;
+        const filePath = path.join(this.currentProjectDir, fileName);
+        const content = this.readFile(filePath);
+        return { path: filePath, content: content };
+    }
 }
 
 module.exports = new FileManager();
